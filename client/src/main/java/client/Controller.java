@@ -18,9 +18,7 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.WindowEvent;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.URL;
@@ -53,6 +51,8 @@ public class Controller implements Initializable {
     private String nickname;
 
     Stage regStage;
+
+    private File file;
 
     public void setAuthenticated(boolean authenticated) {
         this.authenticated = authenticated;
@@ -114,6 +114,9 @@ public class Controller implements Initializable {
 
                     setTitle("chat 2020 : " + nickname);
 
+                    //инициация записи в файл
+                    createFileForSaveHistiry();
+
                     //цикл работы
                     while (true) {
                         String str = in.readUTF();
@@ -138,6 +141,7 @@ public class Controller implements Initializable {
 
                         } else {
                             textArea.appendText(str + "\n");
+                            saveToFile(str);//запись истории в файл
                         }
                     }
                 } catch (SocketException e) {
@@ -234,6 +238,37 @@ public class Controller implements Initializable {
         try {
             out.writeUTF(msg);
         } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void createFileForSaveHistiry(){
+        File filePath = new File("Save");
+        if (filePath.exists()) {
+            System.out.println("Папка уже существует.");
+        } else {
+            filePath.mkdir();
+        }
+        file = new File(filePath + "/" +"history_" + loginField.getText() + ".txt");
+        try {
+            if (file.exists()) {
+                System.out.println("Файл уже существует.");
+            } else {
+                file.createNewFile();
+            }
+            System.out.println(file.getCanonicalPath());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void saveToFile(String history){
+        try(DataOutputStream out = new DataOutputStream(new FileOutputStream(file,true)))
+        {
+            // записываем значения
+            out.writeUTF(history + "\n");
+        }
+        catch(IOException e){
             e.printStackTrace();
         }
     }
