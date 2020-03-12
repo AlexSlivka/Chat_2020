@@ -18,7 +18,9 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.WindowEvent;
 
-import java.io.*;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.URL;
@@ -49,10 +51,9 @@ public class Controller implements Initializable {
 
     private boolean authenticated;
     private String nickname;
+    private String login;         //////////////////////////
 
     Stage regStage;
-
-    private File file;
 
     public void setAuthenticated(boolean authenticated) {
         this.authenticated = authenticated;
@@ -64,6 +65,7 @@ public class Controller implements Initializable {
         clientList.setManaged(authenticated);
         if (!authenticated) {
             nickname = "";
+            History.stop();        ////////////////
         }
         textArea.clear();
         setTitle("chat 2020");
@@ -107,15 +109,18 @@ public class Controller implements Initializable {
                         if (str.startsWith("/authok ")) {
                             setAuthenticated(true);
                             nickname = str.split(" ")[1];
+
+                            /////////////////
+                            textArea.clear();
+                            textArea.appendText(History.getLast100LinesOfHistory(login));
+                            History.start(login);
+
                             break;
                         }
                         textArea.appendText(str + "\n");
                     }
 
                     setTitle("chat 2020 : " + nickname);
-
-                    //инициация записи в файл
-                    createFileForSaveHistiry();
 
                     //цикл работы
                     while (true) {
@@ -141,7 +146,7 @@ public class Controller implements Initializable {
 
                         } else {
                             textArea.appendText(str + "\n");
-                            saveToFile(str);//запись истории в файл
+                            History.writeLine(str);//////////////
                         }
                     }
                 } catch (SocketException e) {
@@ -185,6 +190,8 @@ public class Controller implements Initializable {
         try {
             out.writeUTF("/auth " + loginField.getText() + " " + passwordField.getText());
 //            loginField.clear();
+
+            login = loginField.getText();          ////////////////
             passwordField.clear();
         } catch (IOException e) {
             e.printStackTrace();
@@ -238,37 +245,6 @@ public class Controller implements Initializable {
         try {
             out.writeUTF(msg);
         } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public void createFileForSaveHistiry(){
-        File filePath = new File("Save");
-        if (filePath.exists()) {
-            System.out.println("Папка уже существует.");
-        } else {
-            filePath.mkdir();
-        }
-        file = new File(filePath + "/" +"history_" + loginField.getText() + ".txt");
-        try {
-            if (file.exists()) {
-                System.out.println("Файл уже существует.");
-            } else {
-                file.createNewFile();
-            }
-            System.out.println(file.getCanonicalPath());
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public void saveToFile(String history){
-        try(DataOutputStream out = new DataOutputStream(new FileOutputStream(file,true)))
-        {
-            // записываем значения
-            out.writeUTF(history + "\n");
-        }
-        catch(IOException e){
             e.printStackTrace();
         }
     }
